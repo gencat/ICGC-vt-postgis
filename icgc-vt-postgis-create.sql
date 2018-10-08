@@ -22,9 +22,19 @@ CREATE TABLE IF NOT EXISTS tiles (
     status integer,
     geom geometry(Polygon,3857)
 );
+
 CREATE INDEX IF NOT EXISTS idx_tiles_geom ON tiles USING GIST(geom);
 CREATE INDEX IF NOT EXISTS idx_tiles_zxy  ON tiles (z,x,y);
 
+CREATE UNLOGGED TABLE IF NOT EXISTS layer_stats(
+    dt timestamp without time zone NOT NULL,
+    z integer NOT NULL,
+    x integer NOT NULL,
+    y integer NOT NULL,
+    layer text NOT NULL,
+    bytes integer NOT NULL,
+    render_time interval NOT NULL
+);
 
 -- 
 -- Functions not to be called directly (private).
@@ -53,9 +63,10 @@ DECLARE
   full_sql TEXT;
   result bytea := NULL;
   start_t timestamp := clock_timestamp();
+  log_stats TEXT;
 BEGIN
    -- pg_typeof returns regtype, quoted automatically
-   SELECT lower(sql) FROM layers WHERE name = layer AND z BETWEEN minz AND maxz INTO query;
+   SELECT lower(sql) FROM icgc_vt.layers WHERE name = layer AND z BETWEEN minz AND maxz INTO query;
    IF FOUND THEN
        replaced := replace(
                       replace(query, '!bbox!', format('TileBBox(%s, %s, %s)', z, x, y)),
@@ -66,7 +77,17 @@ BEGIN
         'FROM (%s) AS _sql) AS _q ', 
         layer, z, x, y, replaced);
        EXECUTE full_sql INTO result; 
-       RAISE NOTICE 'z=% x=% y=% layer=% len=% t=%', z,x,y, layer, length(result), (clock_timestamp() - start_t); 
+       BEGIN
+	    SELECT current_setting('icgc_vt.log_stats') INTO log_stats;
+       EXCEPTION
+            WHEN undefined_object THEN
+                SELECT 'off' INTO log_stats;
+       END;
+
+       IF lower(log_stats) = 'on' THEN
+            INSERT INTO icgc_vt.layer_stats VALUES (start_t, z, x, y, layer, length(result), (clock_timestamp() - start_t));
+       END IF;
+
    END IF;
     return result;
 END;
@@ -81,11 +102,9 @@ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION tile_pbf(z integer, x integer, y integer)
     RETURNS bytea AS
 $func$
-    SELECT _pbfcat(_layer_pbf(name, z, x, y)) 
-    FROM layers WHERE z BETWEEN minz AND maxz;
+    SELECT icgc_vt._pbfcat(icgc_vt._layer_pbf(name, z, x, y)) 
+    FROM icgc_vt.layers WHERE z BETWEEN minz AND maxz;
 $func$
 LANGUAGE SQL;
-
--- SELECT length(tile_pbf(7, 64, 47));
 
 END;

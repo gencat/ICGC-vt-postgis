@@ -57,12 +57,33 @@ example for the tiles in 3857 schema covering Catalonia between zooms 7-14
 Once the data is available in the required tables, generating a VT is as easy
 as calling the function:
 
-```
+```sql
 SELECT tile_pbf(z,x,y);
 ```
 
 This returns a binary that can be saved to a file o returned directly to a
 browser client, etc...
+
+# Statistics
+
+When the setting `icgc_vt.log_stats` is set to `on`, data regarding
+the rendering time and size for each layer is logged into the `layer_stats`
+table. It is up to the user to reset this table whenever it makes sense.
+
+The standard pattern would be to activate logging and reset the stats table:
+
+```sql
+DELETE FROM layer_stats;
+SELECT pg_catalog.set_config('icgc_vt.log_stats', 'on', true);
+```
+
+Then perform the queries that we would like to analyze, eg:
+
+```sql
+SELECT icgc_vt.tile_pbf(z,x,y) FROM icgc_vt.tiles;
+```
+
+And then perform any statistical analysis on the results.
 
 # Uninstall
 
