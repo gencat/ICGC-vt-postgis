@@ -47,7 +47,7 @@ AS $$
 $$ 
 LANGUAGE SQL;
 
-DROP AGGREGATE _pbfcat(bytea);
+DROP AGGREGATE IF EXISTS _pbfcat(bytea);
 CREATE AGGREGATE _pbfcat(bytea) (
     SFUNC = _append_bytea,
     STYPE = bytea
