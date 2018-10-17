@@ -58,7 +58,7 @@ Once the data is available in the required tables, generating a VT is as easy
 as calling the function:
 
 ```sql
-SELECT tile_pbf(z,x,y);
+SELECT icgc_vt.tile_pbf(z,x,y);
 ```
 
 This returns a binary that can be saved to a file o returned directly to a
@@ -74,7 +74,7 @@ The standard pattern would be to activate logging and reset the stats table:
 
 ```sql
 DELETE FROM layer_stats;
-SELECT pg_catalog.set_config('icgc_vt.log_stats', 'on', true);
+SELECT pg_catalog.set_config('icgc_vt.log_stats', 'on', false);
 ```
 
 Then perform the queries that we would like to analyze, eg:
