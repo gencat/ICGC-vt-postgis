@@ -21,7 +21,7 @@ Everything is installed in the `icgc-vt-postgis-create.sql` sql file, so
 installation boils down to importing this file, eg:
 
 ```
-psql -U <username> -d <dbname> -f postgis-vt-util.sql
+psql -U <username> -d <dbname> -f icgc-vt-postgis-create.sql
 ```
 
 Make sure the username has the appropiate privileges to do so.
